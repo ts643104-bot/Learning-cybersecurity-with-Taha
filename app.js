@@ -62,7 +62,107 @@ const labs = [
   { id: "network-review", title: "مختبر حركة مرور وهمية", level: "مبتدئ", description: "ميّز بين اتصال مشفر وغير مشفر في بيانات تدريبية مصطنعة.", data: "sample A: protocol=HTTPS destination=training.local\nsample B: protocol=HTTP destination=training.local\nsample C: protocol=DNS query=course.test", question: "أي عينة تستخدم HTTPS؟", options: ["العينة A", "العينة B", "العينة C"], answer: 0, explanation: "توضح البيانات الوهمية أن العينة A تستخدم HTTPS. لا توجد أي اتصالات فعلية." }
 ];
 
-const initialState = { completed: [], scores: {}, labs: [], incidentChecks: [], phishing: { step: 0, complete: false, feedback: "" }, theme: "dark", terminal: { cwd: "/home/learner", files: null } };
+const socCaseSteps = [
+  {
+    phase: "01 · التحقق الأولي",
+    title: "تنبيه تسجيل دخول غير معتاد",
+    detail: "لوحة المراقبة التدريبية أظهرت محاولات دخول فاشلة، وبعدها تسجيل دخول ناجح لحساب تجريبي من جهاز جديد. لسه ما عندناش دليل كافي نقول إن الحساب اتاخترق.",
+    evidence: [
+      "09:14:02  auth.failed  user=learner@training.test",
+      "09:14:05  auth.failed  user=learner@training.test",
+      "09:15:12  auth.success user=learner@training.test device=unseen",
+      "09:16:03  mfa.prompt   user=learner@training.test"
+    ],
+    question: "أول خطوة مهنية وآمنة إيه؟",
+    options: [
+      "أراجع التنبيه والسجلات، وأتأكد من المستخدم بقناة اتصال معروفة.",
+      "أمسح السجلات عشان أقلل القلق.",
+      "أعلن إن فيه اختراق مؤكد من غير تحقق."
+    ],
+    answer: 0,
+    success: "مظبوط. حفظ الأدلة والتحقق من صاحب الحساب بيساعدونا نحدد إذا كان النشاط معروف ولا محتاج استجابة.",
+    wrong: [
+      "مظبوط.",
+      "مسح السجلات ممكن يضيّع أدلة مهمة ويصعّب فهم اللي حصل.",
+      "السجل بيقول إن في نشاط غير معتاد، لكنه لوحده مش كفاية لتأكيد اختراق."
+    ],
+    status: "التنبيه قيد المراجعة"
+  },
+  {
+    phase: "02 · الاحتواء",
+    title: "المستخدم لا يتعرّف على الجهاز",
+    detail: "المستخدم أكد عبر رقم الدعم الداخلي المعروف إنه ما استخدمش الجهاز ده، ووصلته طلبات تحقق ما طلبهاش. دلوقتي عندنا مؤشر أقوى على محاولة وصول للحساب.",
+    evidence: [
+      "09:18:41  user.confirmed_unrecognized_device",
+      "09:18:46  mfa.prompt_count=3",
+      "09:19:02  training_policy=preserve_evidence"
+    ],
+    question: "إيه الإجراء الدفاعي المناسب حسب إجراءات المؤسسة؟",
+    options: [
+      "أوقف الجلسات المشبوهة وأقيّد الحساب مؤقتًا عبر الإجراء المعتمد، مع حفظ السجلات.",
+      "أطلب من المستخدم يبعت كلمة السر على البريد.",
+      "أحذف الحساب فورًا من غير تنسيق أو توثيق."
+    ],
+    answer: 0,
+    success: "تمام. الاحتواء المنضبط يقلل استمرار الوصول، ويحافظ على الأدلة، وبيتم بالتنسيق مع صاحب الحساب والفريق المسؤول.",
+    wrong: [
+      "تمام.",
+      "ما ينفعش نطلب كلمة سر أو رمز تحقق في رسالة. دي بيانات سرية.",
+      "الحذف العشوائي ممكن يضيّع أدلة أو يعطّل العمل؛ اتبع إجراء الاحتواء ووثّق القرار."
+    ],
+    status: "الجلسة المشتبه بها أُوقفت"
+  },
+  {
+    phase: "03 · استعادة الوصول",
+    title: "الحساب اتأمّن من جهاز موثوق",
+    detail: "الفريق أوقف الجلسة المشتبه بها، والمستخدم بيتواصل من جهاز موثوق. محتاجين نرجّع التحكم بالحساب من غير ما نعرّض بياناته للخطر.",
+    evidence: [
+      "09:22:10  suspicious_session=revoked",
+      "09:23:15  recovery_channel=verified",
+      "09:24:00  backup_codes=available"
+    ],
+    question: "إزاي نأمّن الحساب قبل رجوعه للاستخدام؟",
+    options: [
+      "تغيير كلمة السر من جهاز موثوق، مراجعة وسائل الاسترداد، وتفعيل MFA من التطبيق الرسمي.",
+      "استخدام نفس كلمة السر القديمة عشان ما ينساهاش.",
+      "مشاركة رمز التحقق مع زميل لتسريع الدخول."
+    ],
+    answer: 0,
+    success: "عاش. كلمة فريدة ومراجعة وسائل الاسترداد وMFA بتقلل فرص تكرار الوصول غير المصرح.",
+    wrong: [
+      "عاش.",
+      "كلمة السر القديمة ممكن تكون معروفة؛ استخدم كلمة جديدة وفريدة.",
+      "رمز التحقق ما يتشاركش مع أي حد، حتى الزملاء."
+    ],
+    status: "الحساب اتأمّن"
+  },
+  {
+    phase: "04 · التوثيق والتعلّم",
+    title: "الخدمة رجعت، وقت مراجعة اللي حصل",
+    detail: "الوصول رجع للمستخدم بعد التأكد من هويته. سجل الأحداث محفوظ، والخطوة الأخيرة هي توثيق الاستجابة ومراجعة وسائل منع التكرار.",
+    evidence: [
+      "09:31:00  access_restored=true",
+      "09:31:20  evidence_preserved=true",
+      "09:32:10  incident_review=pending"
+    ],
+    question: "إيه اللي يكمل الاستجابة بشكل مسؤول؟",
+    options: [
+      "أوثّق الخطوات والتوقيتات، أراجع التنبيهات، وأحدد تحسينات وقائية.",
+      "أحذف سجل الحادث بعد رجوع الحساب.",
+      "أشارك تفاصيل الحساب في مجموعة عامة للتحذير."
+    ],
+    answer: 0,
+    success: "ممتاز. التوثيق والمراجعة بيساعدوا الفريق يتعلم ويحسّن الحماية من غير كشف بيانات شخصية.",
+    wrong: [
+      "ممتاز.",
+      "الاحتفاظ المنضبط بالسجلات مهم للمراجعة؛ ما تحذفهاش عشوائيًا.",
+      "ما تنشرش بيانات أو تفاصيل حسابات. شارك ملخصًا منقحًا مع الفريق المخوّل فقط."
+    ],
+    status: "الحادثة موثّقة"
+  }
+];
+
+const initialState = { completed: [], scores: {}, labs: [], incidentChecks: [], phishing: { step: 0, complete: false, feedback: "" }, socCase: { step: 0, score: 0, complete: false, feedback: "" }, theme: "dark", terminal: { cwd: "/home/learner", files: null } };
 let state = loadState();
 let activeView = "home";
 let activePath = "";
@@ -95,6 +195,7 @@ function loadState() {
       ...initialState,
       ...(saved || {}),
       phishing: { ...initialState.phishing, ...(saved && saved.phishing || {}) },
+      socCase: { ...initialState.socCase, ...(saved && saved.socCase || {}) },
       terminal: { ...initialState.terminal, ...(saved && saved.terminal || {}) }
     };
   } catch (error) {
@@ -251,10 +352,28 @@ function renderTerminal() {
   return `<aside class="panel"><span class="eyebrow">تدريب آمن</span><h2>طرفية لينكس للتجربة</h2><p class="muted">دي محاكاة جوه الموقع؛ مش بتنفّذ أوامر على جهازك الحقيقي.</p><div class="terminal"><div class="terminal-bar" aria-hidden="true"><i></i><i></i><i></i></div><div class="terminal-output" id="terminal-output" aria-live="polite"><div>أهلًا بيك! اكتب <b>help</b> عشان تشوف الأوامر المتاحة.</div></div><form class="terminal-form" id="terminal-form"><span id="terminal-prompt">taha@safe-lab:~$</span><input id="terminal-input" aria-label="اكتب أمر للمحاكي" autocomplete="off" spellcheck="false"><button class="button small" type="submit">جرّب</button></form></div><p class="terminal-hint">الأوامر المتاحة: pwd, ls, cd, cat, mkdir, touch, cp, mv, grep, find, chmod, ps, clear, help</p></aside>`;
 }
 function renderLabs() {
-  return `<div class="eyebrow">تدريب آمن ومفيهوش مخاطرة</div><h1>جرّب بنفسك</h1><p class="subheading">حلّل بيانات وهمية، واختار التفسير الأقرب، واستعين بالتلميح لو احتجت. مفيش أي اتصال أو تجربة على أنظمة حقيقية.</p><div class="notice" style="margin-bottom:1.2rem"><span>ⓘ</span><p>ما تختبرش أنظمة غيرك من غير إذن صريح. التدريبات دي محاكاة ومش بتبعت بيانات للإنترنت.</p></div>${renderPhishingLab()}<div class="lab-grid">${labs.map(lab => {
+  return `<div class="eyebrow">تدريب آمن ومفيهوش مخاطرة</div><h1>جرّب بنفسك</h1><p class="subheading">حلّل بيانات وهمية، واختار التفسير الأقرب، واستعين بالتلميح لو احتجت. مفيش أي اتصال أو تجربة على أنظمة حقيقية.</p><div class="notice" style="margin-bottom:1.2rem"><span>ⓘ</span><p>ما تختبرش أنظمة غيرك من غير إذن صريح. التدريبات دي محاكاة ومش بتبعت بيانات للإنترنت.</p></div>${renderSocCase()}${renderPhishingLab()}<div class="lab-grid">${labs.map(lab => {
     const done = state.labs.includes(lab.id);
     return `<article class="lab-card"><div class="path-top"><span class="path-icon">⌁</span><span class="badge">${done ? "مكتمل ✓" : lab.level}</span></div><h2 style="margin-top:.8rem">${lab.title}</h2><p>${lab.description}</p><div class="lab-data">${escapeHtml(lab.data)}</div><h3 style="margin-top:1rem">${lab.question}</h3><div data-lab="${lab.id}">${lab.options.map((option, i) => `<button class="choice-button" data-lab-id="${lab.id}" data-choice="${i}">${option}</button>`).join("")}</div><div class="feedback" id="lab-feedback-${lab.id}" aria-live="polite"></div><div class="lesson-actions"><button class="button small ghost" data-hint="${lab.id}">تلميح</button><button class="button small ghost" data-solution="${lab.id}">إظهار التفسير</button></div></article>`;
   }).join("")}</div>`;
+}
+function renderSocCase() {
+  const scenario = state.socCase;
+  const stepIndex = Math.min(scenario.step, socCaseSteps.length - 1);
+  const step = socCaseSteps[stepIndex];
+  const complete = scenario.complete;
+  const phases = socCaseSteps.map((item, index) => `<span class="soc-phase ${index < scenario.step ? "done" : ""} ${index === stepIndex && !complete ? "current" : ""} ${complete && index === socCaseSteps.length - 1 ? "done" : ""}"><i>${index < scenario.step || (complete && index === socCaseSteps.length - 1) ? "✓" : index + 1}</i><small>${item.phase.split("·")[1]}</small></span>`).join("");
+  return `<section class="soc-sim ${complete ? "complete" : ""}" aria-labelledby="soc-title">
+    <header class="soc-topbar"><div class="soc-brand"><span class="soc-live-dot"></span><span>TAHA BLUE TEAM <small>مختبر دفاعي معزول</small></span></div><div class="soc-case-meta"><span>CASE: SIM-204</span><span>SEVERITY: <b>متوسطة</b></span><span>ENV: <b>TRAINING ONLY</b></span></div></header>
+    <div class="soc-heading"><div><span class="eyebrow">سيناريو واقعي — شركة تدريب خيالية</span><h2 id="soc-title">مناوبة فريق الدفاع: تنبيه حساب غير معتاد</h2><p>إنت محلل دفاعي تحت التدريب. راجع الأدلة، واختار الإجراء المسؤول. كل الاختيارات داخل المحاكاة ونتيجتها بتتغير حسب قرارك.</p></div><div class="soc-score"><strong>${scenario.score}</strong><small>نقاط التدريب / 100</small></div></div>
+    <div class="soc-phase-track" aria-label="تقدم السيناريو">${phases}</div>
+    ${complete ? `<div class="soc-complete-panel" role="status"><span>✓</span><div><h3>السيناريو اكتمل — ${scenario.score}/100</h3><p>راجعت المؤشرات، احتويت الجلسة، ساعدت في تأمين الحساب، ووثّقت الحادثة. النتيجة محفوظة على المتصفح.</p><button class="button small ghost" data-soc-reset>ابدأ المحاكاة من جديد</button></div></div>` :
+    `<div class="soc-workspace">
+      <article class="soc-alert-card"><div class="soc-card-heading"><span>تنبيه نشط</span><span class="soc-alert-id">ALERT-08${stepIndex + 1}</span></div><h3>${step.title}</h3><p>${step.detail}</p><div class="soc-evidence"><div class="soc-evidence-title"><span>EVENT LOG · بيانات تدريبية وهمية</span><span>● LIVE SIM</span></div>${step.evidence.map(line => `<code>${escapeHtml(line)}</code>`).join("")}</div><div class="soc-state-line"><span class="state-led"></span>حالة القضية: <strong>${step.status}</strong></div></article>
+      <article class="soc-decision-card"><span class="eyebrow">${step.phase}</span><h3>${step.question}</h3><div class="soc-actions">${step.options.map((option, index) => `<button class="soc-action" data-soc-choice="${index}"><span class="soc-action-key">${["A", "B", "C"][index]}</span><span>${option}</span><b aria-hidden="true">←</b></button>`).join("")}</div><div class="soc-feedback ${scenario.feedback.includes("مظبوط") || scenario.feedback.includes("عاش") || scenario.feedback.includes("ممتاز") ? "good" : ""}" aria-live="polite">${escapeHtml(scenario.feedback || "اختار الإجراء اللي شايفه صح؛ الاختيار الغلط مش هيضر أي نظام، هيوضحلك بس إيه مخاطره.")}</div><div class="soc-footnote">محاكاة تعليمية محلية — لا يوجد اتصال بشبكة أو حساب حقيقي.</div></article>
+    </div>`}
+    <div class="soc-safety"><span>🔒</span><p><strong>نطاق آمن:</strong> الشركة والحسابات والسجلات كلها وهمية، ومفيش أدوات فحص أو أوامر بتشتغل على أنظمة حقيقية.</p></div>
+  </section>`;
 }
 function renderPhishingLab() {
   const training = state.phishing;
@@ -303,6 +422,7 @@ function earnedAchievements() {
     { id: "first", title: "أول خطوة", description: "أكمل أول درس.", icon: "🌱", earned: completedCount() >= 1 },
     { id: "linux", title: "صديق الطرفية", description: "أكمل دروس مسار لينكس.", icon: "⌘", earned: pathProgress(paths[1]).pct === 100 },
     { id: "curious", title: "عين المحلل", description: "أكمل مختبرًا تفاعليًا.", icon: "◉", earned: state.labs.length >= 1 },
+    { id: "soc", title: "محلل فريق الدفاع", description: "أكمل سيناريو الاستجابة الدفاعي.", icon: "🛡", earned: state.socCase.complete },
     { id: "five", title: "خطوات ثابتة", description: "أكمل خمسة دروس.", icon: "✦", earned: completedCount() >= 5 },
     { id: "all", title: "متعلم مستمر", description: "أكمل جميع الدروس التعليمية.", icon: "🏅", earned: completedCount() >= totalLessons() }
   ];
@@ -335,6 +455,35 @@ function bindViewEvents() {
   document.querySelectorAll("[data-solution]").forEach(button => button.addEventListener("click", () => {
     const lab = labs.find(item => item.id === button.dataset.solution);
     showLabMessage(lab.id, `التفسير: ${lab.explanation}`);
+  }));
+  document.querySelectorAll("[data-soc-choice]").forEach(button => button.addEventListener("click", () => {
+    const step = socCaseSteps[state.socCase.step];
+    if (!step || state.socCase.complete) return;
+    const choice = Number(button.dataset.socChoice);
+    if (choice !== step.answer) {
+      state.socCase.feedback = step.wrong[choice];
+      saveState();
+      render();
+      return;
+    }
+    state.socCase.score += 25;
+    state.socCase.step += 1;
+    state.socCase.feedback = step.success;
+    if (state.socCase.step >= socCaseSteps.length) {
+      state.socCase.step = socCaseSteps.length;
+      state.socCase.complete = true;
+      state.socCase.feedback = "اكتمل السيناريو الدفاعي بنجاح.";
+      if (!state.labs.includes("soc-case")) state.labs.push("soc-case");
+      notify("عاش! خلصت سيناريو فريق الدفاع.");
+    }
+    saveState();
+    render();
+  }));
+  document.querySelectorAll("[data-soc-reset]").forEach(button => button.addEventListener("click", () => {
+    state.socCase = { step: 0, score: 0, complete: false, feedback: "" };
+    state.labs = state.labs.filter(id => id !== "soc-case");
+    saveState();
+    render();
   }));
   document.querySelectorAll("[data-phish-choice]").forEach(button => button.addEventListener("click", () => {
     const feedbackByStep = [
